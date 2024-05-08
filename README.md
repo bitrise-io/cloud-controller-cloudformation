@@ -1,2 +1,2 @@
 # cloud-controller-cloudformation
-Cloudformation template generator for the AWS Cloud Controller
+Cloudformation template generator for the AWS Cloud Controller.
