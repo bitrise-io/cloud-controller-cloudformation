@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: The Cloudformation templates deploys a Bitrise Cloud Controller instance into a new VPC. As part of the network, the template creates a VPC with 2 private & 2 public subnets, 1 NAT gateway, and Internet Gateway, an S3 VPC Endpoint and default Routing Table. As part of the infrastructure, the template creates an AutoScalingGroup, LoadBalancer, TargetGroup, LaunchTeamplate, IAM role & policy, Log Group and a Security Group.
+  The Cloud Controller instance is recommended to be deployed into a private subnet. The LoadBalancer is internal, its only purpose is to execute health checks, it serves no traffic.
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names (optional)
+    Type: String
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    AllowedPattern: .+
+    Default: 10.192.0.0/16
+  PublicSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    AllowedPattern: .+
+    Default: 10.192.10.0/24
+  PublicSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+    AllowedPattern: .+
+    Default: 10.192.11.0/24
+  PrivateSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    AllowedPattern: .+
+    Default: 10.192.20.0/24
+  PrivateSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+    AllowedPattern: .+
+    Default: 10.192.21.0/24
+  BitriseControllerToken:
+    Description: Please provide the token you received at Controller creation.
+    Type: String
+    AllowedPattern: .+
+    NoEcho: true
+  BitriseWorkspaceID:
+    Description: Please provide your Bitrise Workspace ID.
+    Type: String
+    AllowedPattern: .+
+  ControllerSshKey:
+    Description: Please provide a keypair name you would like to use for the Controller.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be an existing EC2 KeyPair.
+  ControllerLogRetentionInDays: 
+    Description: Please provide the Controller log retention in days.
+    Type: Number
+    Default: 7
+  ControllerLogGroupClass: 
+    Description: Please provide a CloudWatch Log Class for Controller logs.
+    Type: String
+    AllowedValues: ["STANDARD", "INFREQUENT_ACCESS"]
+    Default: "INFREQUENT_ACCESS"
+  CreateBitriseAgentLogs:
+    Description: Whether to create the Bitrise Agent Logs nested stack
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
+  BitriseAgentLogRetentionInDays:
+    Description: Please provide the Bitrise agent log retention in days.
+    Type: Number
+    Default: 7
+  BitriseAgentLogsGroupClass:
+    Description: Please provide a CloudWatch Log Class for Controller logs.
+    Type: String
+    AllowedValues: [ "STANDARD", "INFREQUENT_ACCESS" ]
+    Default: "INFREQUENT_ACCESS"
+
+Conditions:
+  ShouldCreateBitriseAgentLogs: !Equals [ !Ref CreateBitriseAgentLogs, "true" ]
+
+Resources:
+  NewVpcStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/vpc/vpc.yaml"
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
+        VpcCIDR: !Ref VpcCIDR
+        PublicSubnet1CIDR: !Ref PublicSubnet1CIDR
+        PublicSubnet2CIDR: !Ref PublicSubnet2CIDR
+        PrivateSubnet1CIDR: !Ref PrivateSubnet1CIDR
+        PrivateSubnet2CIDR: !Ref PrivateSubnet2CIDR
+  BitriseControllerTokenSecret:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/secretmanager/secretmanager.yaml"
+      Parameters:
+        BitriseControllerToken: !Ref BitriseControllerToken
+        BitriseWorkspaceID: !Ref BitriseWorkspaceID
+  BitriseControllerLogs:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
+      Parameters:
+        LogRetentionInDays: !Ref ControllerLogRetentionInDays
+        LogGroupClass: !Ref ControllerLogGroupClass
+        LogGroupName: !Join ["-", ["bitrise-controller-logs", !GetAtt NewVpcStack.Outputs.VpcArn]]
+        LogStreamName: "controller-agent"
+        LogOutputExportNamePrefix:  "BitriseController"
+  BitriseAgentLogs:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldCreateBitriseAgentLogs
+    Properties:
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
+      Parameters:
+        LogRetentionInDays: !Ref BitriseAgentLogRetentionInDays
+        LogGroupClass: !Ref BitriseAgentLogsGroupClass
+        LogGroupName: "bitrise-agent-log"
+        LogOutputExportNamePrefix: "BitriseAgentLogs"
+  BitriseInstanceRoles:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
+    Properties:
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/roles.yaml"
+  BitriseAgentLogsInstanceRoles:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldCreateBitriseAgentLogs
+    DependsOn: [ BitriseAgentLogs ]
+    Properties:
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/agent-roles.yaml"
+  BitriseSecurityGroups:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/asg/security-group.yaml"
+      Parameters:
+        VPCID: !GetAtt NewVpcStack.Outputs.VpcArn
+        VpcCidrBlock: !Ref VpcCIDR
+  BitriseAutoscalingGroup:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [NewVpcStack, BitriseInstanceRoles, BitriseControllerTokenSecret, BitriseSecurityGroups]
+    Properties:
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/asg/asg.yaml"
+      Parameters:
+        ControllerSshKey: !Ref ControllerSshKey
+
+Outputs: {}

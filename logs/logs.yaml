@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: This template creates the necessary CloudWatch Log resources with configurable parameters. LogStreamName is optional.
+
+Parameters:
+  LogRetentionInDays:
+    Description: Log retention period in days.
+    Type: Number
+    Default: 7
+
+  LogGroupClass:
+    Description: The class of the CloudWatch Log Group.
+    Type: String
+    AllowedValues: ["STANDARD", "INFREQUENT_ACCESS"]
+    Default: "INFREQUENT_ACCESS"
+
+  LogGroupName:
+    Description: The name of the CloudWatch Log Group.
+    Type: String
+
+  LogStreamName:
+    Description: The name of the CloudWatch Log Stream (leave empty if not required).
+    Type: String
+    Default: ""
+
+  LogOutputExportNamePrefix:
+    Description: Prefix for export names to ensure uniqueness
+    Type: String
+
+Conditions:
+  CreateLogStream: !Not [!Equals [!Ref LogStreamName, ""]]
+
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: !Ref LogRetentionInDays
+      LogGroupClass: !Ref LogGroupClass
+      LogGroupName: !Ref LogGroupName
+
+  LogStream:
+    Type: AWS::Logs::LogStream
+    Condition: CreateLogStream
+    DependsOn: LogGroup
+    Properties:
+      LogGroupName: !Ref LogGroupName
+      LogStreamName: !Ref LogStreamName
+
+Outputs:
+  LogGroupArn:
+    Description: The ARN of the CloudWatch Log Group.
+    Value: !GetAtt LogGroup.Arn
+    Export:
+      Name: !Sub "${LogOutputExportNamePrefix}CloudWatchLogGroupArn"
+
+  LogGroupNameOutput:
+    Description: The name of the CloudWatch Log Group.
+    Value: !Ref LogGroupName
+    Export:
+      Name: !Sub "${LogOutputExportNamePrefix}CloudWatchLogGroupName"
+
+  LogStreamNameOutput:
+    Description: The name of the CloudWatch Log Stream (if created).
+    Value: !Ref LogStreamName
+    Condition: CreateLogStream
+    Export:
+      Name: !Sub "${LogOutputExportNamePrefix}CloudWatchLogStreamName"
