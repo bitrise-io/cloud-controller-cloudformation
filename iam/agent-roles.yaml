@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:  This template creates all the necessary IAM resources for Bitrise agent to be able to stream logs into CloudWatch.
+Resources:
+  BitriseAgentLogsEC2Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: bitrise-agent-log-group-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:PutLogEvents'
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:DescribeLogStreams'
+                Resource:  !Join ["", [ "", !ImportValue BitriseAgentLogsCloudWatchLogGroupArn ]]
+
+      RoleName: bitrise-agent-log-group-role
+      Tags:
+        - Key: cloudwatch-based-log
+          Value: "true"
+        - Key: managed-by-bitrise
+          Value: "true"
+  BitriseAgentLogsInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: bitrise-agent-log-instance-profile
+      Path: /
+      Roles:
+        - Ref: BitriseAgentLogsEC2Role
+
+Outputs: {}

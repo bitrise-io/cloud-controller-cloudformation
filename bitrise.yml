@@ -1,0 +1,98 @@
+---
+format_version: '13'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: other
+trigger_map:
+- pull_request_source_branch: '*'
+  pull_request_target_branch: staging
+  workflow: lint
+- pull_request_source_branch: '*'
+  pull_request_target_branch: production
+  workflow: lint
+- push_branch: staging
+  workflow: staging_deploy
+- push_branch: production
+  workflow: prod_deploy
+
+workflows:
+  _clone:
+    steps:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - git-clone@8: {}
+  _deploy:
+    steps:
+    - script@1:
+        title: Deploy template to S3 bucket
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            export AWS_DEFAULT_REGION=us-east-1
+            aws s3 sync . s3://${AWS_BUCKET_NAME} \
+             --exclude ".gitignore" \
+             --exclude "bitrise.yml" \
+             --exclude "README.md" \
+             --exclude ".git/*" \
+             --exclude "renovate.json"
+  _lint:
+    steps:
+    - script@1:
+        title: Install cloudformation tooling
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            npm install -g aws-cdk
+            pip install cfn-lint
+    - script@1:
+        title: Lint cloudformation
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            cfn-lint *.yaml
+            cfn-lint ./**/*.yaml
+
+  staging_deploy:
+    before_run:
+    - _clone
+    - _lint
+    after_run:
+    - _deploy
+    envs:
+    - AWS_BUCKET_NAME: $AWS_BUCKET_NAME_STAGING
+    - AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID_STAGING
+    - AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY_STAGING
+
+  prod_deploy:
+    before_run:
+    - _clone
+    - _lint
+    after_run:
+    - _deploy
+    envs:
+    - AWS_BUCKET_NAME: $AWS_BUCKET_NAME_PRODUCTION
+  
+  lint:
+    before_run:
+    - _clone
+    - _lint

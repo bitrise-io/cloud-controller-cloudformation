@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: This template deploys an AutoScalingGroup, LoadBalancer, TargetGroup, and a Bitrise Cloud Controller instance within an existing VPC. The LoadBalancer's only purpose is to provide health checks, it serves no traffic.
+
+Parameters:
+  VpcId:
+    Description: Name of an existing VPC
+    Type: AWS::EC2::VPC::Id
+  VpcCidrBlock:
+    Description: CIDR block of the selected VPC
+    Type: String
+    AllowedPattern: .+
+    Default: "10.0.0.0/16"
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select at least two private subnets in your selected VPC.
+  BitriseControllerToken:
+    Description: Please provide the token you received at Controller creation.
+    Type: String
+    AllowedPattern: .+
+    NoEcho: true
+  BitriseWorkspaceID:
+    Description: Please provide your Bitrise Workspace ID.
+    Type: String
+    AllowedPattern: .+
+  ControllerSshKey:
+    Description: Please provide a keypair name you would like to use for the Controller.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  ControllerLogRetentionInDays: 
+    Description: Please provide the Controller log retention in days.
+    Type: Number
+    Default: 7
+  ControllerLogGroupClass: 
+    Description: Please provide a CloudWatch Log Class for Controller logs.
+    Type: String
+    AllowedValues: ["STANDARD", "INFREQUENT_ACCESS"]
+    Default: "INFREQUENT_ACCESS"
+  CreateBitriseAgentLogs:
+    Description: Whether to create the Bitrise Agent Logs nested stack
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
+  BitriseAgentLogRetentionInDays:
+    Description: Please provide the Bitrise agent log retention in days.
+    Type: Number
+    Default: 7
+  BitriseAgentLogsGroupClass:
+    Description: Please provide a CloudWatch Log Class for Controller logs.
+    Type: String
+    AllowedValues: [ "STANDARD", "INFREQUENT_ACCESS" ]
+    Default: "INFREQUENT_ACCESS"
+
+Conditions:
+  ShouldCreateBitriseAgentLogs: !Equals [ !Ref CreateBitriseAgentLogs, "true" ]
+
+Resources:
+  BitriseControllerTokenSecret:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/secretmanager/secretmanager.yaml"
+      Parameters:
+        BitriseControllerToken: !Ref BitriseControllerToken
+        BitriseWorkspaceID: !Ref BitriseWorkspaceID
+  BitriseControllerLogs:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
+      Parameters:
+        LogRetentionInDays: !Ref ControllerLogRetentionInDays
+        LogGroupClass: !Ref ControllerLogGroupClass
+        LogGroupName: !Join ["-", ["bitrise-controller-logs", !Ref VpcId]]
+        LogStreamName: "controller-agent"
+        LogOutputExportNamePrefix: "BitriseController"
+  BitriseAgentLogs:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldCreateBitriseAgentLogs
+    Properties:
+      TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
+      Parameters:
+        LogRetentionInDays: !Ref BitriseAgentLogRetentionInDays
+        LogGroupClass: !Ref BitriseAgentLogsGroupClass
+        LogGroupName: "bitrise-agent-log"
+        LogOutputExportNamePrefix: "BitriseAgentLogs"
+  BitriseInstanceRoles:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
+    Properties:
+      TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/iam/roles.yaml"
+  BitriseAgentLogsInstanceRoles:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldCreateBitriseAgentLogs
+    DependsOn: [ BitriseAgentLogs ]
+    Properties:
+      TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/iam/agent-roles.yaml"
+  BitriseSecurityGroups:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/asg/security-group.yaml"
+      Parameters:
+        VPCID: !Ref VpcId
+        VpcCidrBlock: !Ref VpcCidrBlock
+  BitriseAutoscalingGroup:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [BitriseInstanceRoles, BitriseControllerTokenSecret, BitriseSecurityGroups]
+    Properties:
+      TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/asg/asg-existing-vpc.yaml"
+      Parameters:
+        VPCID: !Ref VpcId
+        SubnetIds: !Join [",", !Ref SubnetIds]
+        ControllerSshKey: !Ref ControllerSshKey
+
+Outputs: {}
