@@ -81,7 +81,7 @@ Resources:
   NewVpcStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/vpc/vpc.yaml"
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/vpc/vpc-airgapped.yaml"
       Parameters:
         EnvironmentName: !Ref EnvironmentName
         VpcCIDR: !Ref VpcCIDR
