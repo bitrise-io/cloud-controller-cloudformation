@@ -11,22 +11,74 @@ Parameters:
     AllowedPattern: .+
 
 Resources:
-  S3PrefixList:
-    Type: AWS::EC2::PrefixList
+  LookupPrefixListFunction:
+    Type: AWS::Lambda::Function
     Properties:
-      PrefixListName: "BitriseController-com.amazonaws.us-east-1.s3"
-      AddressFamily: "IPv4"
-      MaxEntries: 10
-      Entries:
-        - Cidr: "16.182.0.0/16"
-        - Cidr: "18.34.0.0/19"
-        - Cidr: "18.34.232.0/21"
-        - Cidr: "3.5.0.0/19"
-        - Cidr: "52.216.0.0/15"
-        - Cidr: "54.231.0.0/16"
-      Tags:
-        - Key: managed-by-bitrise
-          Value: "true"
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import cfnresponse
+          import os
+
+          def handler(event, context):
+            region = os.environ['AWS_REGION']
+            prefix_list_name = f"com.amazonaws.{region}.s3"
+            ec2 = boto3.client('ec2')
+            try:
+              response = ec2.describe_managed_prefix_lists(
+                Filters=[
+                  {
+                    'Name': 'prefix-list-name',
+                    'Values': [prefix_list_name]
+                  }
+                ]
+              )
+              
+              prefix_list_id = response['PrefixLists'][0]['PrefixListId']
+              response_data = {'PrefixListId': prefix_list_id}
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+            except Exception as e:
+              print(f"Error: {e}")
+              cfnresponse.send(event, context, cfnresponse.FAILED, {})
+      Runtime: python3.9
+      Timeout: 30
+      MemorySize: 128
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaVPCEndpointPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeManagedPrefixLists
+                Resource: "*"
+
+  S3PrefixListId:
+    Type: Custom::LookupPrefixList
+    Properties:
+      ServiceToken: !GetAtt LookupPrefixListFunction.Arn
+
+
+  InstanceSecurityGroupS3EgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt InstanceSecurityGroup.GroupId
+      IpProtocol: "-1"
+      DestinationPrefixListId: !GetAtt S3PrefixListId.PrefixListId
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -77,13 +129,6 @@ Resources:
       FromPort: 443
       ToPort: 443
       CidrIp: "104.18.27.96/32"
-  InstanceSecurityGroupS3EgressRule:
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      GroupId: !GetAtt InstanceSecurityGroup.GroupId
-      IpProtocol: "-1"
-      DestinationPrefixListId: !Ref S3PrefixList
-
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
