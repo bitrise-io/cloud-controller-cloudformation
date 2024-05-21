@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:  This template creates the necessary air-gapped Security Gorups within the selected VPC.
+
+Parameters:
+  VPCID:
+    Description: Name of an existing VPC
+    Type: AWS::EC2::VPC::Id
+  VpcCidrBlock:
+    Description: CIDR block of the VPC
+    Type: String
+    AllowedPattern: .+
+
+Resources:
+  S3PrefixList:
+    Type: AWS::EC2::PrefixList
+    Properties:
+      PrefixListName: "BitriseController-com.amazonaws.us-east-1.s3"
+      AddressFamily: "IPv4"
+      MaxEntries: 10
+      Entries:
+        - Cidr: "16.182.0.0/16"
+        - Cidr: "18.34.0.0/19"
+        - Cidr: "18.34.232.0/21"
+        - Cidr: "3.5.0.0/19"
+        - Cidr: "52.216.0.0/15"
+        - Cidr: "54.231.0.0/16"
+      Tags:
+        - Key: managed-by-bitrise
+          Value: "true"
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Default Airgapped Bitrise Cloud Controller security group
+      VpcId: !Ref VPCID
+      Tags: 
+        - Key: managed-by-bitrise
+          Value: "true"
+
+  InstanceSecurityGroupInterfaceVpcEndpointIngressRule: 
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt InstanceSecurityGroup.GroupId
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
+  InstanceSecurityGroupLoadBalancerIngressRule: 
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt InstanceSecurityGroup.GroupId
+      IpProtocol: "tcp"
+      FromPort: 8080
+      ToPort: 8080
+      SourceSecurityGroupId: 
+        Fn::GetAtt:
+          - LoadBalancerSecurityGroup
+          - GroupId
+ 
+  InstanceSecurityGroupInterfaceVpcEndpointEgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt InstanceSecurityGroup.GroupId
+      IpProtocol: "-1"
+      DestinationSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
+  InstanceSecurityGroupBitrise1EgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt InstanceSecurityGroup.GroupId
+      IpProtocol: "tcp"
+      FromPort: 443
+      ToPort: 443
+      CidrIp: "104.18.26.96/32"
+  InstanceSecurityGroupBitrise2EgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt InstanceSecurityGroup.GroupId
+      IpProtocol: "tcp"
+      FromPort: 443
+      ToPort: 443
+      CidrIp: "104.18.27.96/32"
+  InstanceSecurityGroupS3EgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt InstanceSecurityGroup.GroupId
+      IpProtocol: "-1"
+      DestinationPrefixListId: !Ref S3PrefixList
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Default Bitrise Cloud Controller Airgapped LoadBalancer security group
+      VpcId: !Ref VPCID
+      Tags: 
+        - Key: managed-by-bitrise
+          Value: "true"
+  LoadBalancerSecurityGroupIngressRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: "tcp"
+      FromPort: 8080
+      ToPort: 8080
+      CidrIp: !Ref VpcCidrBlock
+  LoadBalancerSecurityGroupInstanceEgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: "tcp"
+      FromPort: 8080
+      ToPort: 8080
+      DestinationSecurityGroupId: 
+        Fn::GetAtt:
+          - InstanceSecurityGroup
+          - GroupId
+
+Outputs:
+  InstanceSg:
+    Description: A reference to the Airgapped Intance Security Group
+    Value: !Ref InstanceSecurityGroup
+    Export:
+      Name: bitriseInstanceSecurityGroup
+  InstanceSgGroupId:
+    Description: A reference to the Intance Security Group GroupId
+    Value:
+      Fn::GetAtt:
+        - InstanceSecurityGroup
+        - GroupId
+    Export:
+      Name: bitriseInstanceSGGroupId
+  LoadBalancerSecurityGroup:
+    Description: A reference to the Load Balancer Security Group
+    Value: !Ref LoadBalancerSecurityGroup
+    Export:
+      Name: bitriseLoadBalancerSecurityGroup

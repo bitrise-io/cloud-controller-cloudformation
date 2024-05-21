@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:  This template creates all the necessary IAM resources.
+Resources:
+  ControllerEC2Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: bitrise-ec2-controller-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 'ecr:GetAuthorizationToken'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'ec2:DescribeInstances'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'ec2:DescribeInstanceStatus'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'ec2:DescribeVolumes'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'ec2:RunInstances'
+                Resource: 
+                  - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":instance*" ]]
+                  - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":network-interface/*" ]]
+                  - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":security-group/*" ]]
+                  - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":subnet/*" ]]
+                  - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":volume/*" ]]
+                  - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", ":image/*" ]]
+                  - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":launch-template/*" ]]
+                  - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":key-pair/*" ]]
+
+              - Effect: Allow
+                Action: 'ec2:TerminateInstances'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":instance*" ]]
+              - Effect: Allow
+                Action: 'ec2:CreateTags'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":*" ]]
+              - Effect: Allow
+                Action: 'ec2:DeleteTags'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":instance*" ]]
+              - Effect: Allow
+                Action: 'ec2:DescribeHosts'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'ec2:DeleteTags'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":dedicated-host*" ]]
+              - Effect: Allow
+                Action: 'ec2:AllocateHosts'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":dedicated-host*" ]]
+              - Effect: Allow
+                Action: 'ec2:ReleaseHosts'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":dedicated-host*" ]]
+              - Effect: Allow
+                Action: 'secretsmanager:GetSecretValue'
+                Resource:  !Join ["", [ "", !ImportValue BitriseControllerTokenSecretArn ]]
+              - Effect: Allow
+                Action: 'secretsmanager:GetResourcePolicy'
+                Resource:  !Join ["", [ "", !ImportValue BitriseControllerTokenSecretArn ]]
+              - Effect: Allow
+                Action: 'secretsmanager:DescribeSecret'
+                Resource:  !Join ["", [ "", !ImportValue BitriseControllerTokenSecretArn ]]
+              - Effect: Allow
+                Action: 'secretsmanager:ListSecretVersionIds'
+                Resource:  !Join ["", [ "", !ImportValue BitriseControllerTokenSecretArn ]]
+              - Effect: Allow
+                Action: 'secretsmanager:GetSecretValue'
+                Resource:  !Join ["", [ "", !ImportValue BitriseWorkplaceIDSecretArn ]]
+              - Effect: Allow
+                Action: 'secretsmanager:GetResourcePolicy'
+                Resource:  !Join ["", [ "", !ImportValue BitriseWorkplaceIDSecretArn ]]
+              - Effect: Allow
+                Action: 'secretsmanager:DescribeSecret'
+                Resource:  !Join ["", [ "", !ImportValue BitriseWorkplaceIDSecretArn ]]
+              - Effect: Allow
+                Action: 'secretsmanager:ListSecretVersionIds'
+                Resource:  !Join ["", [ "", !ImportValue BitriseWorkplaceIDSecretArn ]]
+              - Effect: Allow
+                Action: 'autoscaling:DescribeAutoScalingGroups'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'autoscaling:DescribeScalingActivities'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'autoscaling:UpdateAutoScalingGroup'
+                Resource: !Join ["", [ "arn:aws:autoscaling:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":autoScalingGroup:*:autoScalingGroupName/bitrise-aws-cloud-controller-asg"]]
+                Condition:
+                  Bool:
+                    autoscaling:LaunchTemplateVersionSpecified: "true"
+              - Effect: Allow
+                Action: 'autoscaling:StartInstanceRefresh'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'iam:PassRole'
+                Resource: !Join ["", [ "arn:aws:iam::",!Ref AWS::AccountId, ":role/bitrise-ec2-controller-role"  ]]
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: "ec2.amazonaws.com"
+              - Effect: Allow
+                Action: 'iam:PassRole'
+                Resource: !Join ["", [ "arn:aws:iam::",!Ref AWS::AccountId, ":role/bitrise-agent-log-group-role"  ]]
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: "ec2.amazonaws.com"
+              - Effect: Allow
+                Action: 'iam:PassRole'
+                Resource: !Join [ "", [ "arn:aws:iam::",!Ref AWS::AccountId, ":role/*" ] ]
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: "ec2.amazonaws.com"
+              - Effect: Allow
+                Action: 'ec2:DescribeLaunchTemplateVersions'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'ec2:CreateLaunchTemplateVersion'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":launch-template/*"  ]]
+              - Effect: Allow
+                Action: 'ec2:ModifyLaunchTemplate'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":launch-template/*"  ]]
+              - Effect: Allow
+                Action: 'ec2:DeleteLaunchTemplateVersions'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":launch-template/*"  ]]
+              - Effect: Allow
+                Action: 'logs:PutLogEvents'
+                Resource:  !Join ["", [ "", !ImportValue BitriseControllerCloudWatchLogGroupArn ]]
+              - Effect: Allow
+                Action: 'ecr:BatchGetImage'
+                Resource: "arn:aws:ecr:us-east-1:790586994723:repository/bitrise-aws-cloud-controller"
+              - Effect: Allow
+                Action: 'ecr:GetDownloadUrlForLayer'
+                Resource: "arn:aws:ecr:us-east-1:790586994723:repository/bitrise-aws-cloud-controller"
+
+
+      RoleName: bitrise-ec2-controller-role
+      Tags:
+        - Key: managed-by-bitrise
+          Value: "true"
+  ControllerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: bitrise-cloud-controller-instance-profile
+      Path: /
+      Roles: 
+        - Ref: ControllerEC2Role
+Outputs:
+  InstanceProfile:
+    Description: A reference to the Controller Instance Profile
+    Value:
+      Fn::GetAtt:
+        - ControllerInstanceProfile
+        - Arn
+    Export:
+      Name: bitriseInstanceProfileArn
