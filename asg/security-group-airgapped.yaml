@@ -68,7 +68,7 @@ Resources:
       IpProtocol: "tcp"
       FromPort: 443
       ToPort: 443
-      CidrIp: "104.18.26.96/32"
+      CidrIp: "104.18.0.168/32"
   InstanceSecurityGroupBitrise2EgressRule:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
@@ -76,7 +76,7 @@ Resources:
       IpProtocol: "tcp"
       FromPort: 443
       ToPort: 443
-      CidrIp: "104.18.27.96/32"
+      CidrIp: "104.18.1.168/32"
   InstanceSecurityGroupS3EgressRule:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
