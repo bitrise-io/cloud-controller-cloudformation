@@ -1,36 +1,18 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: The Cloudformation templates deploys a Bitrise Cloud Controller instance into a new VPC. As part of the network, the template creates a VPC with 2 private & 2 public subnets, 1 NAT gateway, and Internet Gateway, an S3 VPC Endpoint and default Routing Table. As part of the infrastructure, the template creates an AutoScalingGroup, LoadBalancer, TargetGroup, LaunchTeamplate, IAM role & policy, Log Group and a Security Group.
-  The Cloud Controller instance is recommended to be deployed into a private subnet. The LoadBalancer is internal, its only purpose is to execute health checks, it serves no traffic.
+Description: This template deploys an AutoScalingGroup, LoadBalancer, TargetGroup, and a Bitrise Cloud Controller instance within an existing VPC. The LoadBalancer's only purpose is to provide health checks, it serves no traffic.
 
 Parameters:
-  EnvironmentName:
-    Description: An environment name that is prefixed to resource names (optional)
-    Type: String
-  VpcCIDR:
-    Description: Please enter the IP range (CIDR notation) for this VPC
-    Type: String
-    AllowedPattern: .+
-    Default: 10.192.0.0/16
-  PublicSubnet1CIDR:
-    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+  VpcId:
+    Description: Name of an existing VPC
+    Type: AWS::EC2::VPC::Id
+  VpcCidrBlock:
+    Description: CIDR block of the selected VPC
     Type: String
     AllowedPattern: .+
-    Default: 10.192.10.0/24
-  PublicSubnet2CIDR:
-    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
-    Type: String
-    AllowedPattern: .+
-    Default: 10.192.11.0/24
-  PrivateSubnet1CIDR:
-    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
-    Type: String
-    AllowedPattern: .+
-    Default: 10.192.20.0/24
-  PrivateSubnet2CIDR:
-    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
-    Type: String
-    AllowedPattern: .+
-    Default: 10.192.21.0/24
+    Default: "10.0.0.0/16"
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select at least two private subnets in your selected VPC.
   BitriseControllerToken:
     Description: Please provide the token you received at Controller creation.
     Type: String
@@ -43,7 +25,7 @@ Parameters:
   ControllerSshKey:
     Description: Please provide a keypair name you would like to use for the Controller.
     Type: AWS::EC2::KeyPair::KeyName
-    ConstraintDescription: Must be an existing EC2 KeyPair.
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
   ControllerLogRetentionInDays: 
     Description: Please provide the Controller log retention in days.
     Type: Number
@@ -74,17 +56,6 @@ Conditions:
   ShouldCreateBitriseAgentLogs: !Equals [ !Ref CreateBitriseAgentLogs, "true" ]
 
 Resources:
-  NewVpcStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/vpc/vpc.yaml"
-      Parameters:
-        EnvironmentName: !Ref EnvironmentName
-        VpcCIDR: !Ref VpcCIDR
-        PublicSubnet1CIDR: !Ref PublicSubnet1CIDR
-        PublicSubnet2CIDR: !Ref PublicSubnet2CIDR
-        PrivateSubnet1CIDR: !Ref PrivateSubnet1CIDR
-        PrivateSubnet2CIDR: !Ref PrivateSubnet2CIDR
   BitriseControllerTokenSecret:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -99,9 +70,9 @@ Resources:
       Parameters:
         LogRetentionInDays: !Ref ControllerLogRetentionInDays
         LogGroupClass: !Ref ControllerLogGroupClass
-        LogGroupName: !Join ["-", ["bitrise-controller-logs", !GetAtt NewVpcStack.Outputs.VpcArn]]
+        LogGroupName: !Join ["-", ["bitrise-controller-logs", !Ref VpcId]]
         LogStreamName: "controller-agent"
-        LogOutputExportNamePrefix:  "BitriseController"
+        LogOutputExportNamePrefix: "BitriseController"
   BitriseAgentLogs:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldCreateBitriseAgentLogs
@@ -116,7 +87,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
     Properties:
-      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/roles.yaml"
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/roles-airgapped.yaml"
   BitriseAgentLogsInstanceRoles:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldCreateBitriseAgentLogs
@@ -126,16 +97,18 @@ Resources:
   BitriseSecurityGroups:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/asg/security-group.yaml"
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/asg/security-group-airgapped.yaml"
       Parameters:
-        VPCID: !GetAtt NewVpcStack.Outputs.VpcArn
-        VpcCidrBlock: !Ref VpcCIDR
+        VPCID: !Ref VpcId
+        VpcCidrBlock: !Ref VpcCidrBlock
   BitriseAutoscalingGroup:
     Type: AWS::CloudFormation::Stack
-    DependsOn: [NewVpcStack, BitriseInstanceRoles, BitriseControllerTokenSecret, BitriseSecurityGroups]
+    DependsOn: [BitriseInstanceRoles, BitriseControllerTokenSecret, BitriseSecurityGroups]
     Properties:
-      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/asg/asg.yaml"
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/asg/asg-existing-vpc-airgapped.yaml"
       Parameters:
+        VPCID: !Ref VpcId
+        SubnetIds: !Join [",", !Ref SubnetIds]
         ControllerSshKey: !Ref ControllerSshKey
 
 Outputs: {}

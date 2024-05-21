@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:  This template creates an autoscaling group for the Cloud Controller.
+
+Parameters:
+  ControllerSshKey:
+    Description: Keypair name used for the Cloud Controller
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+
+Resources:
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        IamInstanceProfile:
+          Arn: !ImportValue bitriseInstanceProfileArn
+        ImageId: ami-0a3c3a20c09d6f377
+        InstanceType: t2.small
+        KeyName: !Ref ControllerSshKey
+        Monitoring:
+          Enabled: false
+        SecurityGroupIds: [ !ImportValue bitriseInstanceSGGroupId ]
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: managed-by-bitrise
+                Value: "true"
+              - Key: Name
+                Value: Bitrise Cloud Controller
+          - ResourceType: volume
+            Tags:
+              - Key: managed-by-bitrise
+                Value: "true"
+              - Key: Name
+                Value: Bitrise Cloud Controller
+        UserData:
+          Fn::Base64: 
+            Fn::Sub: 
+              - |
+                #!/bin/bash
+                sudo yum clean expire-cache
+                sudo yum install jq -y
+                sudo yum install docker -y
+                sudo usermod -a -G docker ec2-user
+                newgrp docker
+                sudo systemctl enable docker.service
+                sudo systemctl start docker.service
+                docker logout public.ecr.aws
+                aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 790586994723.dkr.ecr.us-east-1.amazonaws.com
+                docker pull 790586994723.dkr.ecr.us-east-1.amazonaws.com/bitrise-aws-cloud-controller:0.3.5
+                export TOKEN=$(aws secretsmanager get-secret-value --secret-id ${BitriseControllerTokenSecretArn} --region ${Region} | jq  -r '.SecretString')
+                export WORKSPACE_ID=$(aws secretsmanager get-secret-value --secret-id ${BitriseWorkspaceIDArn} --region ${Region} | jq  -r '.SecretString')
+                docker run -d --net=host --restart=always --log-opt max-size=15m --log-opt max-file=5 790586994723.dkr.ecr.us-east-1.amazonaws.com/bitrise-aws-cloud-controller:0.3.5 run \
+                  --token  $TOKEN \
+                  --workspace-id $WORKSPACE_ID \
+                  --host cloud-controller-aws-internal.services.bitrise.dev:443 \
+                  --cloudwatch-log-group-name ${ControllerLogGroupName} \
+                  --cloudwatch-log-stream-name ${ControllerLogStreamName} \
+                  --aws-region ${Region}
+              - {
+                  BitriseControllerTokenSecretArn: !ImportValue BitriseControllerTokenSecretArn,
+                  BitriseWorkspaceIDArn: !ImportValue BitriseWorkplaceIDSecretArn,
+                  Region: !Ref AWS::Region,
+                  ControllerLogGroupName: !ImportValue BitriseControllerCloudWatchLogGroupName,
+                  ControllerLogStreamName: !ImportValue BitriseControllerCloudWatchLogStreamName
+                }
+
+      LaunchTemplateName: bitrise-aws-cloud-controller-launch-template
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: managed-by-bitrise
+              Value: "true"
+  HealthCheckLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4
+      Name: bitrise-controller-hc-lb
+      Scheme: internal
+      Subnets:
+        - !ImportValue bitrisePrivateSubnet1Arn
+        - !ImportValue bitrisePrivateSubnet2Arn
+      SecurityGroups: 
+        - !ImportValue bitriseLoadBalancerSecurityGroup
+      Tags:
+        - Key: managed-by-bitrise
+          Value: "true"
+      Type: application
+  LBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref LoadBalancerTargetGroup
+      LoadBalancerArn: !Ref HealthCheckLoadBalancer
+      Port: 8080
+      Protocol: HTTP
+  LoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckEnabled: true
+      HealthCheckPath: /healthz
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 20
+      Matcher: 
+        HttpCode: "200"
+      Name: bitrise-controller-hc-tg
+      Port: 8080
+      Protocol: HTTP
+      Tags:
+        - Key: managed-by-bitrise
+          Value: "true"
+      UnhealthyThresholdCount: 4
+      VpcId: !ImportValue bitriseVpcArn
+  AutoscalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: bitrise-aws-cloud-controller-asg
+      DefaultInstanceWarmup: 60
+      HealthCheckGracePeriod: 90
+      HealthCheckType: ELB
+      TargetGroupARNs:
+        - !Ref LoadBalancerTargetGroup
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version:
+          Fn::GetAtt:
+            - LaunchTemplate
+            - LatestVersionNumber
+      MaxSize: "1"
+      MinSize: "1"
+      TerminationPolicies: [OldestInstance]
+      VPCZoneIdentifier:
+        - !ImportValue bitrisePrivateSubnet1Arn
+        - !ImportValue bitrisePrivateSubnet2Arn
+      Tags:
+        - Key: managed-by-bitrise	
+          Value: true
+          PropagateAtLaunch: false
+    UpdatePolicy:
+      AutoScalingScheduledAction:
+        IgnoreUnmodifiedGroupSizeProperties: true
+Outputs: {}
