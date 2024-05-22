@@ -52,10 +52,10 @@ Resources:
                 sudo systemctl enable docker.service
                 sudo systemctl start docker.service
                 docker logout public.ecr.aws
-                docker pull public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.3.5
+                docker pull public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.3.6
                 export TOKEN=$(aws secretsmanager get-secret-value --secret-id ${BitriseControllerTokenSecretArn} --region ${Region} | jq  -r '.SecretString')
                 export WORKSPACE_ID=$(aws secretsmanager get-secret-value --secret-id ${BitriseWorkspaceIDArn} --region ${Region} | jq  -r '.SecretString')
-                docker run -d --net=host --restart=always --log-opt max-size=15m --log-opt max-file=5 public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.3.5 run \
+                docker run -d --net=host --restart=always --log-opt max-size=15m --log-opt max-file=5 public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.3.6 run \
                   --token  $TOKEN \
                   --workspace-id $WORKSPACE_ID \
                   --host cloud-controller-aws-internal.services.bitrise.dev:443 \
