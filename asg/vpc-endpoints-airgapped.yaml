@@ -7,6 +7,17 @@ Parameters:
     Type: AWS::EC2::VPC::Id
 
 Resources:
+  AutoscalingVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.autoscaling"
+      VpcId: !Ref VPCID
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !ImportValue bitrisePrivateSubnet1Arn
+        - !ImportValue bitrisePrivateSubnet2Arn
+      SecurityGroupIds: [ !ImportValue bitriseInstanceSecurityGroup ]
+      PrivateDnsEnabled: true
   EC2VPCEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
