@@ -16,6 +16,9 @@ Resources:
     Properties:
       GroupDescription: Default Bitrise Cloud Controller security group
       VpcId: !Ref VPCID
+      Tags: 
+        - Key: managed-by-bitrise
+          Value: "true"
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 8080
@@ -32,6 +35,9 @@ Resources:
     Properties:
       GroupDescription: Default Bitrise Cloud Controller LoadBalancer security group
       VpcId: !Ref VPCID
+      Tags: 
+        - Key: managed-by-bitrise
+          Value: "true"
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 8080

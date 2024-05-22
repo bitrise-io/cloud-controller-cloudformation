@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:  This template creates the necessary air-gapped Security Gorups within the selected VPC.
+
+Parameters:
+  VPCID:
+    Description: Name of an existing VPC
+    Type: AWS::EC2::VPC::Id
+
+Resources:
+  EC2VPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ec2"
+      VpcId: !Ref VPCID
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !ImportValue bitrisePrivateSubnet1Arn
+        - !ImportValue bitrisePrivateSubnet2Arn
+      SecurityGroupIds: [ !ImportValue bitriseInstanceSecurityGroup ]
+      PrivateDnsEnabled: true
+  ECRAPIVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ecr.api"
+      VpcId: !Ref VPCID
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !ImportValue bitrisePrivateSubnet1Arn
+        - !ImportValue bitrisePrivateSubnet2Arn
+      SecurityGroupIds: [ !ImportValue bitriseInstanceSecurityGroup ]
+      PrivateDnsEnabled: true
+  ECRDKRVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ecr.dkr"
+      VpcId: !Ref VPCID
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !ImportValue bitrisePrivateSubnet1Arn
+        - !ImportValue bitrisePrivateSubnet2Arn
+      SecurityGroupIds: [ !ImportValue bitriseInstanceSecurityGroup ]
+      PrivateDnsEnabled: true
+  LogsVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.logs"
+      VpcId: !Ref VPCID
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !ImportValue bitrisePrivateSubnet1Arn
+        - !ImportValue bitrisePrivateSubnet2Arn
+      SecurityGroupIds: [ !ImportValue bitriseInstanceSecurityGroup ]
+      PrivateDnsEnabled: true
+  SecretsManagerVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.secretsmanager"
+      VpcId: !Ref VPCID
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !ImportValue bitrisePrivateSubnet1Arn
+        - !ImportValue bitrisePrivateSubnet2Arn
+      SecurityGroupIds: [ !ImportValue bitriseInstanceSecurityGroup ]
+      PrivateDnsEnabled: true
