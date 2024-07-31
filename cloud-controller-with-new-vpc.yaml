@@ -59,7 +59,7 @@ Parameters:
     AllowedValues:
       - "true"
       - "false"
-    Default: "false"
+    Default: "true"
   BitriseAgentLogRetentionInDays:
     Description: Please provide the Bitrise agent log retention in days.
     Type: Number
