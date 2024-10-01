@@ -51,9 +51,12 @@ Parameters:
     Type: String
     AllowedValues: [ "STANDARD", "INFREQUENT_ACCESS" ]
     Default: "INFREQUENT_ACCESS"
-
-Conditions:
-  ShouldCreateBitriseAgentLogs: !Equals [ !Ref CreateBitriseAgentLogs, "true" ]
+  LatestAmiId:
+    Description: Amazon AMI to use for the Bitrise Controller
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-minimal-kernel-default-x86_64'
+  Conditions:
+    ShouldCreateBitriseAgentLogs: !Equals [ !Ref CreateBitriseAgentLogs, "true" ]
 
 Resources:
   BitriseControllerTokenSecret:
@@ -110,5 +113,6 @@ Resources:
         VPCID: !Ref VpcId
         SubnetIds: !Join [",", !Ref SubnetIds]
         ControllerSshKey: !Ref ControllerSshKey
+        LatestAmiId: !Ref LatestAmiId
 
 Outputs: {}
