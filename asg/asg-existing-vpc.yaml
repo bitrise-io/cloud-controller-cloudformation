@@ -14,7 +14,7 @@ Parameters:
     Description: Select at least two private subnets in your selected VPC.
   LatestAmiId:
     Description: Amazon AMI to use for the Bitrise Controller
-    Type: String
+    Type: AWS::EC2::Image::Id
 
 Resources:
   LaunchTemplate:
