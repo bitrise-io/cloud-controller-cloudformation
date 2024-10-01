@@ -8,7 +8,7 @@ Parameters:
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
   LatestAmiId:
     Description: Amazon AMI to use for the Bitrise Controller
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Type: String
 
 Resources:
   LaunchTemplate:
