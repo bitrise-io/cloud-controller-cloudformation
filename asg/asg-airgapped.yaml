@@ -2,6 +2,9 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description:  This template creates an autoscaling group for the Cloud Controller.
 
 Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names (optional)
+    Type: String
   ControllerSshKey:
     Description: Keypair name used for the Cloud Controller
     Type: AWS::EC2::KeyPair::KeyName
@@ -61,7 +64,7 @@ Resources:
                   --cloudwatch-log-stream-name ${ControllerLogStreamName} \
                   --aws-region ${Region}
               - {
-                  BitriseControllerTokenSecretArn: !ImportValue BitriseControllerTokenSecretArn,
+                  BitriseControllerTokenSecretArn: !ImportValue !Sub "${EnvironmentName}-BitriseControllerTokenSecretArn",
                   BitriseWorkspaceIDArn: !ImportValue BitriseWorkplaceIDSecretArn,
                   Region: !Ref AWS::Region,
                   ControllerLogGroupName: !ImportValue BitriseControllerCloudWatchLogGroupName,
@@ -115,7 +118,8 @@ Resources:
         - Key: managed-by-bitrise
           Value: "true"
       UnhealthyThresholdCount: 4
-      VpcId: !ImportValue bitriseVpcArn
+      VpcId: !ImportValue !Sub "${EnvironmentName}-bitriseVpcArn"
+
   AutoscalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
