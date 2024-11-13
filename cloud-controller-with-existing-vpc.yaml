@@ -93,6 +93,8 @@ Resources:
     DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/roles.yaml"
+      Parameters:
+        BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseAgentLogsInstanceRoles:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldCreateBitriseAgentLogs
