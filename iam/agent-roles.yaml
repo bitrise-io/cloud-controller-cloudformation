@@ -1,5 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description:  This template creates all the necessary IAM resources for Bitrise agent to be able to stream logs into CloudWatch.
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names (optional)
+    Type: String
+
 Resources:
   BitriseAgentLogsEC2Role:
     Type: 'AWS::IAM::Role'
@@ -25,7 +31,8 @@ Resources:
                   - 'logs:CreateLogGroup'
                   - 'logs:CreateLogStream'
                   - 'logs:DescribeLogStreams'
-                Resource:  !Join ["", [ "", !ImportValue BitriseAgentLogsCloudWatchLogGroupArn ]]
+                Resource: !ImportValue 
+                    'Fn::Sub': "${EnvironmentName}-BitriseAgentLogsCloudWatchLogGroupArn"
 
       RoleName: bitrise-agent-log-group-role
       Tags:
