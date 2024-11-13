@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description:  This template creates an autoscaling group for the Cloud Controller.
+Description: This template creates an autoscaling group for the Cloud Controller.
 
 Parameters:
   EnvironmentName:
@@ -63,14 +63,12 @@ Resources:
                   --cloudwatch-log-group-name ${ControllerLogGroupName} \
                   --cloudwatch-log-stream-name ${ControllerLogStreamName} \
                   --aws-region ${Region}
-              - {
-                  BitriseControllerTokenSecretArn: !ImportValue
-                      Fn::Sub: "${EnvironmentName}-BitriseControllerTokenSecretArn",
-                  BitriseWorkspaceIDArn: !ImportValue BitriseWorkplaceIDSecretArn,
-                  Region: !Ref AWS::Region,
-                  ControllerLogGroupName: !ImportValue BitriseControllerCloudWatchLogGroupName,
-                  ControllerLogStreamName: !ImportValue BitriseControllerCloudWatchLogStreamName
-                }
+              - BitriseControllerTokenSecretArn: !ImportValue 
+                    Fn::Sub: "${EnvironmentName}-BitriseControllerTokenSecretArn"
+                BitriseWorkspaceIDArn: !ImportValue BitriseWorkplaceIDSecretArn
+                Region: !Ref AWS::Region
+                ControllerLogGroupName: !ImportValue BitriseControllerCloudWatchLogGroupName
+                ControllerLogStreamName: !ImportValue BitriseControllerCloudWatchLogStreamName
 
       LaunchTemplateName: bitrise-aws-cloud-controller-launch-template
       TagSpecifications:
@@ -119,7 +117,7 @@ Resources:
         - Key: managed-by-bitrise
           Value: "true"
       UnhealthyThresholdCount: 4
-      VpcId: !ImportValue !Sub "${EnvironmentName}-bitriseVpcArn"
+      VpcId: !Sub "${EnvironmentName}-bitriseVpcArn"
 
   AutoscalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
