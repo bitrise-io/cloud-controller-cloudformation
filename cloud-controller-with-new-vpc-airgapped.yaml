@@ -129,6 +129,8 @@ Resources:
     DependsOn: [ BitriseAgentLogs ]
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/agent-roles.yaml"
+      Parameters:
+        BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseSecurityGroups:
     Type: AWS::CloudFormation::Stack
     Properties:
