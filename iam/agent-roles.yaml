@@ -43,7 +43,7 @@ Resources:
   BitriseAgentLogsInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: bitrise-agent-log-instance-profile
+      InstanceProfileName: !Sub ${BitriseWorkspaceID}-bitrise-agent-log-instance-profile
       Path: /
       Roles:
         - Ref: BitriseAgentLogsEC2Role
