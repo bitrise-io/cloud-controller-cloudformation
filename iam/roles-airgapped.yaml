@@ -1,5 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description:  This template creates all the necessary IAM resources.
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names (optional)
+    Type: String
+
 Resources:
   ControllerEC2Role:
     Type: 'AWS::IAM::Role'
@@ -66,28 +72,36 @@ Resources:
                 Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":dedicated-host*" ]]
               - Effect: Allow
                 Action: 'secretsmanager:GetSecretValue'
-                Resource:  !Join ["", [ "", !ImportValue BitriseControllerTokenSecretArn ]]
+                Resource: !ImportValue 
+                    'Fn::Sub': "${EnvironmentName}-BitriseControllerTokenSecretArn"
               - Effect: Allow
                 Action: 'secretsmanager:GetResourcePolicy'
-                Resource:  !Join ["", [ "", !ImportValue BitriseControllerTokenSecretArn ]]
+                Resource: !ImportValue
+                    'Fn::Sub': "${EnvironmentName}-BitriseControllerTokenSecretArn"
               - Effect: Allow
                 Action: 'secretsmanager:DescribeSecret'
-                Resource:  !Join ["", [ "", !ImportValue BitriseControllerTokenSecretArn ]]
+                Resource: !ImportValue
+                    'Fn::Sub': "${EnvironmentName}-BitriseControllerTokenSecretArn"
               - Effect: Allow
                 Action: 'secretsmanager:ListSecretVersionIds'
-                Resource:  !Join ["", [ "", !ImportValue BitriseControllerTokenSecretArn ]]
+                Resource: !ImportValue
+                    'Fn::Sub': "${EnvironmentName}-BitriseControllerTokenSecretArn"
               - Effect: Allow
                 Action: 'secretsmanager:GetSecretValue'
-                Resource:  !Join ["", [ "", !ImportValue BitriseWorkplaceIDSecretArn ]]
+                Resource: !ImportValue
+                    'Fn::Sub': "${EnvironmentName}-BitriseWorkplaceIDSecretArn"
               - Effect: Allow
                 Action: 'secretsmanager:GetResourcePolicy'
-                Resource:  !Join ["", [ "", !ImportValue BitriseWorkplaceIDSecretArn ]]
+                Resource: !ImportValue
+                    'Fn::Sub': "${EnvironmentName}-BitriseWorkplaceIDSecretArn"
               - Effect: Allow
                 Action: 'secretsmanager:DescribeSecret'
-                Resource:  !Join ["", [ "", !ImportValue BitriseWorkplaceIDSecretArn ]]
+                Resource: !ImportValue
+                    'Fn::Sub': "${EnvironmentName}-BitriseWorkplaceIDSecretArn"
               - Effect: Allow
                 Action: 'secretsmanager:ListSecretVersionIds'
-                Resource:  !Join ["", [ "", !ImportValue BitriseWorkplaceIDSecretArn ]]
+                Resource: !ImportValue
+                    'Fn::Sub': "${EnvironmentName}-BitriseWorkplaceIDSecretArn"
               - Effect: Allow
                 Action: 'autoscaling:DescribeAutoScalingGroups'
                 Resource: "*"

@@ -65,10 +65,13 @@ Resources:
                   --aws-region ${Region}
               - BitriseControllerTokenSecretArn: !ImportValue 
                     Fn::Sub: "${EnvironmentName}-BitriseControllerTokenSecretArn"
-                BitriseWorkspaceIDArn: !ImportValue BitriseWorkplaceIDSecretArn
+                BitriseWorkspaceIDArn: !ImportValue 
+                    Fn::Sub: "${EnvironmentName}-BitriseWorkplaceIDSecretArn"
                 Region: !Ref AWS::Region
-                ControllerLogGroupName: !ImportValue BitriseControllerCloudWatchLogGroupName
-                ControllerLogStreamName: !ImportValue BitriseControllerCloudWatchLogStreamName
+                ControllerLogGroupName: !ImportValue 
+                    Fn::Sub: "${EnvironmentName}-BitriseControllerCloudWatchLogGroupName"
+                ControllerLogStreamName: !ImportValue 
+                    Fn::Sub: "${EnvironmentName}-BitriseControllerCloudWatchLogStreamName"
 
       LaunchTemplateName: bitrise-aws-cloud-controller-launch-template
       TagSpecifications:

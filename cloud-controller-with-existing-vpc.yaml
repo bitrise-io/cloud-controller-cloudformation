@@ -3,6 +3,9 @@ Description: The Cloudformation templates deploys a Bitrise Cloud Controller ins
   The Cloud Controller instance is recommended to be deployed into a private subnet. The LoadBalancer is internal, its only purpose is to execute health checks, it serves no traffic.
 
 Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names (optional)
+    Type: String
   VpcId:
     Description: Name of an existing VPC
     Type: AWS::EC2::VPC::Id
@@ -68,6 +71,7 @@ Resources:
       Parameters:
         BitriseControllerToken: !Ref BitriseControllerToken
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
+        EnvironmentName: !Ref EnvironmentName
   BitriseControllerLogs:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -93,6 +97,8 @@ Resources:
     DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/roles.yaml"
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
   BitriseAgentLogsInstanceRoles:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldCreateBitriseAgentLogs
@@ -112,6 +118,7 @@ Resources:
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/asg/asg-existing-vpc.yaml"
       Parameters:
+        EnvironmentName: !Ref EnvironmentName
         VPCID: !Ref VpcId
         SubnetIds: !Join [",", !Ref SubnetIds]
         ControllerSshKey: !Ref ControllerSshKey

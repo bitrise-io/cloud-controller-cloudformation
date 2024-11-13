@@ -2,6 +2,9 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: This template deploys an AutoScalingGroup, LoadBalancer, TargetGroup, and a Bitrise Cloud Controller instance within an existing VPC. The LoadBalancer's only purpose is to provide health checks, it serves no traffic.
 
 Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names (optional)
+    Type: String
   VpcId:
     Description: Name of an existing VPC
     Type: AWS::EC2::VPC::Id
@@ -67,6 +70,7 @@ Resources:
       Parameters:
         BitriseControllerToken: !Ref BitriseControllerToken
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
+        EnvironmentName: !Ref EnvironmentName
   BitriseControllerLogs:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -92,6 +96,8 @@ Resources:
     DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/roles-airgapped.yaml"
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
   BitriseAgentLogsInstanceRoles:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldCreateBitriseAgentLogs
@@ -111,6 +117,7 @@ Resources:
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/asg/asg-existing-vpc-airgapped.yaml"
       Parameters:
+        EnvironmentName: !Ref EnvironmentName
         VPCID: !Ref VpcId
         SubnetIds: !Join [",", !Ref SubnetIds]
         ControllerSshKey: !Ref ControllerSshKey

@@ -96,6 +96,7 @@ Resources:
       Parameters:
         BitriseControllerToken: !Ref BitriseControllerToken
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
+        EnvironmentName: !Ref EnvironmentName
   BitriseControllerLogs:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -121,6 +122,8 @@ Resources:
     DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/roles.yaml"
+      Parameters:
+        EnvironmentName: !Ref EnvironmentName
   BitriseAgentLogsInstanceRoles:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldCreateBitriseAgentLogs
@@ -140,6 +143,7 @@ Resources:
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/asg/asg.yaml"
       Parameters:
+        EnvironmentName: !Ref EnvironmentName
         ControllerSshKey: !Ref ControllerSshKey
         LatestAmiId: !Ref LatestAmiId
 
