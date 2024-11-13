@@ -2,26 +2,25 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: This template creates the necessary CloudWatch Log resources with configurable parameters. LogStreamName is optional.
 
 Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names (optional)
+    Type: String
   LogRetentionInDays:
     Description: Log retention period in days.
     Type: Number
     Default: 7
-
   LogGroupClass:
     Description: The class of the CloudWatch Log Group.
     Type: String
     AllowedValues: ["STANDARD", "INFREQUENT_ACCESS"]
     Default: "INFREQUENT_ACCESS"
-
   LogGroupName:
     Description: The name of the CloudWatch Log Group.
     Type: String
-
   LogStreamName:
     Description: The name of the CloudWatch Log Stream (leave empty if not required).
     Type: String
     Default: ""
-
   LogOutputExportNamePrefix:
     Description: Prefix for export names to ensure uniqueness
     Type: String
@@ -56,11 +55,11 @@ Outputs:
     Description: The name of the CloudWatch Log Group.
     Value: !Ref LogGroupName
     Export:
-      Name: !Sub "${LogOutputExportNamePrefix}CloudWatchLogGroupName"
+      Name: !Sub "${EnvironmentName}-${LogOutputExportNamePrefix}CloudWatchLogGroupName"
 
   LogStreamNameOutput:
     Description: The name of the CloudWatch Log Stream (if created).
     Value: !Ref LogStreamName
     Condition: CreateLogStream
     Export:
-      Name: !Sub "${LogOutputExportNamePrefix}CloudWatchLogStreamName"
+      Name: !Sub "${EnvironmentName}-{LogOutputExportNamePrefix}CloudWatchLogStreamName"

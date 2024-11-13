@@ -102,6 +102,7 @@ Resources:
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
       Parameters:
+        EnvironmentName: !Ref EnvironmentName
         LogRetentionInDays: !Ref ControllerLogRetentionInDays
         LogGroupClass: !Ref ControllerLogGroupClass
         LogGroupName: !Join ["-", ["bitrise-controller-logs", !GetAtt NewVpcStack.Outputs.VpcArn]]
@@ -113,6 +114,7 @@ Resources:
     Properties:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
       Parameters:
+        EnvironmentName: !Ref EnvironmentName
         LogRetentionInDays: !Ref BitriseAgentLogRetentionInDays
         LogGroupClass: !Ref BitriseAgentLogsGroupClass
         LogGroupName: "bitrise-agent-log"
