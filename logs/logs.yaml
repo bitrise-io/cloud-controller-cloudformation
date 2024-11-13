@@ -49,7 +49,7 @@ Outputs:
     Description: The ARN of the CloudWatch Log Group.
     Value: !GetAtt LogGroup.Arn
     Export:
-      Name: !Sub "${LogOutputExportNamePrefix}CloudWatchLogGroupArn"
+      Name: !Sub "${EnvironmentName}-${LogOutputExportNamePrefix}CloudWatchLogGroupArn"
 
   LogGroupNameOutput:
     Description: The name of the CloudWatch Log Group.
@@ -62,4 +62,4 @@ Outputs:
     Value: !Ref LogStreamName
     Condition: CreateLogStream
     Export:
-      Name: !Sub "${EnvironmentName}-{LogOutputExportNamePrefix}CloudWatchLogStreamName"
+      Name: !Sub "${EnvironmentName}-${LogOutputExportNamePrefix}CloudWatchLogStreamName"

@@ -149,7 +149,8 @@ Resources:
                 Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":launch-template/*"  ]]
               - Effect: Allow
                 Action: 'logs:PutLogEvents'
-                Resource:  !Join ["", [ "", !ImportValue BitriseControllerCloudWatchLogGroupArn ]]
+                Resource: !ImportValue
+                    'Fn::Sub': "${EnvironmentName}-BitriseControllerCloudWatchLogGroupArn"
               - Effect: Allow
                 Action: 'ecr:BatchGetImage'
                 Resource: "arn:aws:ecr:us-east-1:790586994723:repository/bitrise-aws-cloud-controller"
