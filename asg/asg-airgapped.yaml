@@ -64,7 +64,8 @@ Resources:
                   --cloudwatch-log-stream-name ${ControllerLogStreamName} \
                   --aws-region ${Region}
               - {
-                  BitriseControllerTokenSecretArn: !ImportValue !Sub "${EnvironmentName}-BitriseControllerTokenSecretArn",
+                  BitriseControllerTokenSecretArn: !ImportValue
+                      Fn::Sub: "${EnvironmentName}-BitriseControllerTokenSecretArn",
                   BitriseWorkspaceIDArn: !ImportValue BitriseWorkplaceIDSecretArn,
                   Region: !Ref AWS::Region,
                   ControllerLogGroupName: !ImportValue BitriseControllerCloudWatchLogGroupName,
