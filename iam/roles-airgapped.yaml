@@ -156,7 +156,7 @@ Resources:
   ControllerInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: bitrise-cloud-controller-instance-profile
+      InstanceProfileName: !Sub ${BitriseWorkspaceID}-bitrise-cloud-controller-instance-profile
       Path: /
       Roles: 
         - Ref: ControllerEC2Role
