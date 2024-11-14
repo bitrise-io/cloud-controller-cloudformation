@@ -151,7 +151,7 @@ Resources:
                 Resource: !Join ["", [ "arn:aws:ecr:", !Ref AWS::Region, ":790586994723:repository/bitrise-aws-cloud-controller"  ]]
 
 
-      RoleName: bitrise-ec2-controller-role
+      RoleName: !Sub ${BitriseWorkspaceID}-bitrise-ec2-controller-role
       Tags:
         - Key: managed-by-bitrise
           Value: "true"
