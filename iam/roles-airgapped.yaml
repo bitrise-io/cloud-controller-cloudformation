@@ -145,10 +145,10 @@ Resources:
                 Resource:  !Join ["", [ "", !ImportValue BitriseControllerCloudWatchLogGroupArn ]]
               - Effect: Allow
                 Action: 'ecr:BatchGetImage'
-                Resource: "arn:aws:ecr:us-east-1:790586994723:repository/bitrise-aws-cloud-controller"
+                Resource: !Join ["", [ "arn:aws:ecr:", !Ref AWS::Region, ":790586994723:repository/bitrise-aws-cloud-controller"  ]]
               - Effect: Allow
                 Action: 'ecr:GetDownloadUrlForLayer'
-                Resource: "arn:aws:ecr:us-east-1:790586994723:repository/bitrise-aws-cloud-controller"
+                Resource: !Join ["", [ "arn:aws:ecr:", !Ref AWS::Region, ":790586994723:repository/bitrise-aws-cloud-controller"  ]]
       RoleName: !Sub ${BitriseWorkspaceID}-bitrise-ec2-controller-role
       Tags:
         - Key: managed-by-bitrise
