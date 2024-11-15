@@ -55,7 +55,7 @@ Resources:
                 docker run -d --net=host --restart=always --log-opt max-size=15m --log-opt max-file=5 790586994723.dkr.ecr.${Region}.amazonaws.com/bitrise-aws-cloud-controller:0.5.1 run \
                   --token  $TOKEN \
                   --workspace-id $WORKSPACE_ID \
-                  --host cloud-controller-aws-internal.services.bitrise.dev:443 \
+                  --host cloud-controller-aws-internal.services.bitrise.io:443 \
                   --cloudwatch-log-group-name ${ControllerLogGroupName} \
                   --cloudwatch-log-stream-name ${ControllerLogStreamName} \
                   --aws-region ${Region}
