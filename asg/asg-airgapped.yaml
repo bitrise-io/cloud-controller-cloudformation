@@ -49,11 +49,11 @@ Resources:
                 sudo systemctl enable docker.service
                 sudo systemctl start docker.service
                 docker logout public.ecr.aws
-                aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 790586994723.dkr.ecr.us-east-1.amazonaws.com
-                docker pull 790586994723.dkr.ecr.us-east-1.amazonaws.com/bitrise-aws-cloud-controller:0.3.6
+                aws ecr get-login-password --region ${Region} | docker login --username AWS --password-stdin 790586994723.dkr.ecr.${Region}.amazonaws.com
+                docker pull 790586994723.dkr.ecr.${Region}.amazonaws.com/bitrise-aws-cloud-controller:0.5.1
                 export TOKEN=$(aws secretsmanager get-secret-value --secret-id ${BitriseControllerTokenSecretArn} --region ${Region} | jq  -r '.SecretString')
                 export WORKSPACE_ID=$(aws secretsmanager get-secret-value --secret-id ${BitriseWorkspaceIDArn} --region ${Region} | jq  -r '.SecretString')
-                docker run -d --net=host --restart=always --log-opt max-size=15m --log-opt max-file=5 790586994723.dkr.ecr.us-east-1.amazonaws.com/bitrise-aws-cloud-controller:0.3.6 run \
+                docker run -d --net=host --restart=always --log-opt max-size=15m --log-opt max-file=5 790586994723.dkr.ecr.${Region}.amazonaws.com/bitrise-aws-cloud-controller:0.5.1 run \
                   --token  $TOKEN \
                   --workspace-id $WORKSPACE_ID \
                   --host cloud-controller-aws-internal.services.bitrise.dev:443 \
