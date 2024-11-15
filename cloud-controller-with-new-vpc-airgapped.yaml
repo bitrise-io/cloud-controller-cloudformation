@@ -121,12 +121,16 @@ Resources:
     DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/iam/roles-airgapped.yaml"
+      Parameters:
+        BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseAgentLogsInstanceRoles:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldCreateBitriseAgentLogs
     DependsOn: [ BitriseAgentLogs ]
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/iam/agent-roles.yaml"
+      Parameters:
+        BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseSecurityGroups:
     Type: AWS::CloudFormation::Stack
     Properties:

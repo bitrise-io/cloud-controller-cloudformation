@@ -1,5 +1,12 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description:  This template creates all the necessary IAM resources.
+
+Parameters:
+  BitriseWorkspaceID:
+    Description: Please provide your Bitrise Workspace ID.
+    Type: String
+    AllowedPattern: .+
+
 Resources:
   ControllerEC2Role:
     Type: 'AWS::IAM::Role'
@@ -102,13 +109,13 @@ Resources:
                 Resource: "*"
               - Effect: Allow
                 Action: 'iam:PassRole'
-                Resource: !Join ["", [ "arn:aws:iam::",!Ref AWS::AccountId, ":role/bitrise-ec2-controller-role"  ]]
+                Resource: !Join ["", [ "arn:aws:iam::",!Ref AWS::AccountId, "Fn::Sub": ":role/${BitriseWorkspaceID}-bitrise-ec2-controller-role" ]]
                 Condition:
                   StringEquals:
                     iam:PassedToService: "ec2.amazonaws.com"
               - Effect: Allow
                 Action: 'iam:PassRole'
-                Resource: !Join ["", [ "arn:aws:iam::",!Ref AWS::AccountId, ":role/bitrise-agent-log-group-role"  ]]
+                Resource: !Join ["", [ "arn:aws:iam::",!Ref AWS::AccountId, "Fn::Sub": ":role/${BitriseWorkspaceID}-bitrise-agent-log-group-role" ]]
                 Condition:
                   StringEquals:
                     iam:PassedToService: "ec2.amazonaws.com"
@@ -128,14 +135,14 @@ Resources:
                 Action: 'logs:PutLogEvents'
                 Resource:  !Join ["", [ "", !ImportValue BitriseControllerCloudWatchLogGroupArn ]]
 
-      RoleName: bitrise-ec2-controller-role
+      RoleName: !Sub ${BitriseWorkspaceID}-bitrise-ec2-controller-role
       Tags:
         - Key: managed-by-bitrise
           Value: "true"
   ControllerInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: bitrise-cloud-controller-instance-profile
+      InstanceProfileName: !Sub ${BitriseWorkspaceID}-bitrise-cloud-controller-instance-profile
       Path: /
       Roles: 
         - Ref: ControllerEC2Role
