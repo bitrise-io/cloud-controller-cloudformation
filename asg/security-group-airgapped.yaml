@@ -129,6 +129,14 @@ Resources:
       FromPort: 443
       ToPort: 443
       CidrIp: "104.18.1.168/32"
+  InstanceSecurityGroupBitrise3EgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt InstanceSecurityGroup.GroupId
+      IpProtocol: "tcp"
+      FromPort: 443
+      ToPort: 443
+      CidrIp: "34.136.173.75/32"
 
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
