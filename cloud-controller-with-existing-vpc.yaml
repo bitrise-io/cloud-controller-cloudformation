@@ -103,6 +103,12 @@ Resources:
       TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/agent-roles.yaml"
       Parameters:
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
+  BitriseAgentDefaultInstanceRoles:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://bitrise-staging-cloudformation-templates.s3.amazonaws.com/iam/default-instance-role.yaml"
+      Parameters:
+        BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseSecurityGroups:
     Type: AWS::CloudFormation::Stack
     Properties:
