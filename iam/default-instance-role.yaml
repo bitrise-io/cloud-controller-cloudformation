@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description:  This template creates an empty Instance Role which is attached to the VM by default.
+Description:  This template creates an empty Instance Role which is attached to the Instance by default.
 
 Parameters:
   BitriseWorkspaceID:
