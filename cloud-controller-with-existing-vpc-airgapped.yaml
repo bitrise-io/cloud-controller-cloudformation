@@ -55,6 +55,17 @@ Parameters:
     Description: Amazon AMI to use for the Bitrise Controller
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-minimal-kernel-default-x86_64'
+  CustomBashScript:
+    Description: Custom bash script to run on instance startup
+    Type: String
+    Default: ""
+  UseHostNetwork:
+    Description: Use host network mode for Docker container (--net=host)
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 
 Conditions:
   ShouldCreateBitriseAgentLogs: !Equals [ !Ref CreateBitriseAgentLogs, "true" ]
@@ -119,5 +130,7 @@ Resources:
         SubnetIds: !Join [",", !Ref SubnetIds]
         ControllerSshKey: !Ref ControllerSshKey
         LatestAmiId: !Ref LatestAmiId
+        CustomBashScript: !Ref CustomBashScript
+        UseHostNetwork: !Ref UseHostNetwork
 
 Outputs: {}
