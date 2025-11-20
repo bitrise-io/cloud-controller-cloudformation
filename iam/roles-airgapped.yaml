@@ -57,7 +57,7 @@ Resources:
                 Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":instance*" ]]
                 Condition:
                   StringEquals:
-                    "aws:RequestTag/managed-by-bitrise": "true"
+                    "aws:ResourceTag/managed-by-bitrise": "true"
               - Effect: Allow
                 Action: 'ec2:CreateTags'
                 Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":*" ]]
