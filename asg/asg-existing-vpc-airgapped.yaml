@@ -15,6 +15,17 @@ Parameters:
   LatestAmiId:
     Description: Amazon AMI to use for the Bitrise Controller
     Type: AWS::EC2::Image::Id
+  CustomBashScript:
+    Description: Optional custom bash script to execute on the host after bootstrap (leave empty to skip).
+    Type: String
+    Default: ""
+  UseHostNetwork:
+    Description: Use host network mode for Docker container (--net=host)
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 
 Resources:
   LaunchTemplate:
@@ -47,6 +58,7 @@ Resources:
             Fn::Sub: 
               - |
                 #!/bin/bash
+                
                 sudo yum clean expire-cache
                 sudo yum install jq -y
                 sudo yum install docker -y
@@ -58,19 +70,38 @@ Resources:
                 docker pull 790586994723.dkr.ecr.${Region}.amazonaws.com/bitrise-aws-cloud-controller:0.6.23
                 export TOKEN=$(aws secretsmanager get-secret-value --secret-id ${BitriseControllerTokenSecretArn} --region ${Region} | jq  -r '.SecretString')
                 export WORKSPACE_ID=$(aws secretsmanager get-secret-value --secret-id ${BitriseWorkspaceIDArn} --region ${Region} | jq  -r '.SecretString')
-                docker run -d --net=host --restart=always --log-opt max-size=15m --log-opt max-file=5 790586994723.dkr.ecr.${Region}.amazonaws.com/bitrise-aws-cloud-controller:0.6.23 run \
+                
+                DOCKER_OPTS="-d -p 8080:8080 --restart=always --log-opt max-size=15m --log-opt max-file=5"
+                # Add --net=host only if UseHostNetwork is true
+                if [ "${UseHostNetwork}" == "true" ]; then
+                  DOCKER_OPTS="$DOCKER_OPTS --net=host"
+                fi
+                
+                docker run $DOCKER_OPTS 790586994723.dkr.ecr.${Region}.amazonaws.com/bitrise-aws-cloud-controller:0.6.23 run \
                   --token  $TOKEN \
                   --workspace-id $WORKSPACE_ID \
                   --host cloud-controller-aws-internal.services.bitrise.io:443 \
                   --cloudwatch-log-group-name ${ControllerLogGroupName} \
                   --cloudwatch-log-stream-name ${ControllerLogStreamName} \
                   --aws-region ${Region}
+                
+                mkdir -p /var/lib/bitrise
+                cat > /var/lib/bitrise/custom-user-script.sh <<'CUSTOM_SCRIPT'
+                ${CustomBashScript}
+                CUSTOM_SCRIPT
+
+                if [ -s /var/lib/bitrise/custom-user-script.sh ] && grep -q '[^[:space:]]' /var/lib/bitrise/custom-user-script.sh; then
+                  chmod +x /var/lib/bitrise/custom-user-script.sh
+                  /var/lib/bitrise/custom-user-script.sh >> /var/log/custom-user-script.log 2>&1
+                fi
               - {
                   BitriseControllerTokenSecretArn: !ImportValue BitriseControllerTokenSecretArn,
                   BitriseWorkspaceIDArn: !ImportValue BitriseWorkplaceIDSecretArn,
                   Region: !Ref AWS::Region,
                   ControllerLogGroupName: !ImportValue BitriseControllerCloudWatchLogGroupName,
-                  ControllerLogStreamName: !ImportValue BitriseControllerCloudWatchLogStreamName
+                  ControllerLogStreamName: !ImportValue BitriseControllerCloudWatchLogStreamName,
+                  CustomBashScript: !Ref CustomBashScript,
+                  UseHostNetwork: !Ref UseHostNetwork
                 }
 
       LaunchTemplateName: bitrise-aws-cloud-controller-launch-template
