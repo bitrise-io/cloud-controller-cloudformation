@@ -49,10 +49,15 @@ Resources:
                   - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", ":image/*" ]]
                   - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":launch-template/*" ]]
                   - !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":key-pair/*" ]]
-
+                Condition:
+                  StringEquals:
+                    "aws:RequestTag/managed-by-bitrise": "true"
               - Effect: Allow
                 Action: 'ec2:TerminateInstances'
                 Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":instance*" ]]
+                Condition:
+                  StringEquals:
+                    "aws:RequestTag/managed-by-bitrise": "true"
               - Effect: Allow
                 Action: 'ec2:CreateTags'
                 Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":*" ]]
