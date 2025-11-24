@@ -63,11 +63,8 @@ Resources:
                 cat > /var/lib/bitrise/custom-user-script.sh <<'CUSTOM_SCRIPT'
                 ${CustomBashScript}
                 CUSTOM_SCRIPT
-
-                if [ -s /var/lib/bitrise/custom-user-script.sh ] && grep -q '[^[:space:]]' /var/lib/bitrise/custom-user-script.sh; then
-                  chmod +x /var/lib/bitrise/custom-user-script.sh
-                  /var/lib/bitrise/custom-user-script.sh >> /var/log/custom-user-script.log 2>&1
-                fi
+                chmod +x /var/lib/bitrise/custom-user-script.sh
+                /var/lib/bitrise/custom-user-script.sh >> /var/log/custom-user-script.log 2>&1
                 sudo yum clean expire-cache
                 sudo yum install jq -y
                 sudo yum install docker -y
