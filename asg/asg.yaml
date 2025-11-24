@@ -66,7 +66,7 @@ Resources:
                 newgrp docker
                 sudo systemctl enable docker.service
                 sudo systemctl start docker.service
-                docker pull public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.6.35
+                docker pull public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.6.34
                 export TOKEN=$(aws secretsmanager get-secret-value --secret-id ${BitriseControllerTokenSecretArn} --region ${Region} | jq  -r '.SecretString')
                 export WORKSPACE_ID=$(aws secretsmanager get-secret-value --secret-id ${BitriseWorkspaceIDArn} --region ${Region} | jq  -r '.SecretString')                
                  # Build docker run command
@@ -77,7 +77,7 @@ Resources:
                   DOCKER_OPTS="$DOCKER_OPTS --net=host"
                 fi
                 
-                docker run $DOCKER_OPTS public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.6.35 run \
+                docker run $DOCKER_OPTS public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.6.34 run \
                   --token  $TOKEN \
                   --workspace-id $WORKSPACE_ID \
                   --host cloud-controller-aws-internal.services.bitrise.dev:443 \
