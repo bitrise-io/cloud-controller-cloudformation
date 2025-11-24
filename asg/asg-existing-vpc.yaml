@@ -16,7 +16,7 @@ Parameters:
     Description: Amazon AMI to use for the Bitrise Controller
     Type: AWS::EC2::Image::Id
   CustomBashScript:
-    Description: Custom bash script to run on instance startup
+    Description: Optional custom bash script to execute on the EC2 before bootstrap (leave empty to skip).
     Type: String
     Default: ""
   UseHostNetwork:
@@ -59,22 +59,17 @@ Resources:
               - |
                 #!/bin/bash
                 
+                mkdir -p /var/lib/bitrise
+                cat > /var/lib/bitrise/custom-user-script.sh <<'CUSTOM_SCRIPT'
+                ${CustomBashScript}
+                CUSTOM_SCRIPT
+                chmod +x /var/lib/bitrise/custom-user-script.sh
+                /var/lib/bitrise/custom-user-script.sh >> /var/log/custom-user-script.log 2>&1
                 sudo yum clean expire-cache
                 sudo yum install jq -y
                 sudo yum install docker -y
                 sudo usermod -a -G docker ec2-user
                 newgrp docker
-                
-                mkdir -p /var/lib/bitrise
-                cat > /var/lib/bitrise/custom-user-script.sh <<'CUSTOM_SCRIPT'
-                ${CustomBashScript}
-                CUSTOM_SCRIPT
-
-                if [ -s /var/lib/bitrise/custom-user-script.sh ] && grep -q '[^[:space:]]' /var/lib/bitrise/custom-user-script.sh; then
-                  chmod +x /var/lib/bitrise/custom-user-script.sh
-                  /var/lib/bitrise/custom-user-script.sh >> /var/log/custom-user-script.log 2>&1
-                fi
-                
                 sudo systemctl enable docker.service
                 sudo systemctl start docker.service
                 docker logout public.ecr.aws
