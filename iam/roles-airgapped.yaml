@@ -129,6 +129,18 @@ Resources:
                   StringEquals:
                     iam:PassedToService: "ec2.amazonaws.com"
               - Effect: Allow
+                Action: 'ec2:DescribeLaunchTemplateVersions'
+                Resource: "*"
+              - Effect: Allow
+                Action: 'ec2:CreateLaunchTemplateVersion'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":launch-template/*"  ]]
+              - Effect: Allow
+                Action: 'ec2:ModifyLaunchTemplate'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":launch-template/*"  ]]
+              - Effect: Allow
+                Action: 'ec2:DeleteLaunchTemplateVersions'
+                Resource: !Join ["", [ "arn:aws:ec2:", !Ref AWS::Region, ":", !Ref AWS::AccountId, ":launch-template/*"  ]]
+              - Effect: Allow
                 Action: 'logs:PutLogEvents'
                 Resource:  !Join ["", [ "", !ImportValue BitriseControllerCloudWatchLogGroupArn ]]
               - Effect: Allow
