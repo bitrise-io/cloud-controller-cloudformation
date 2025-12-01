@@ -73,7 +73,7 @@ Resources:
                 sudo systemctl enable docker.service
                 sudo systemctl start docker.service
                 docker logout public.ecr.aws
-                docker pull public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.6.23
+                docker pull public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.6.35
                 export TOKEN=$(aws secretsmanager get-secret-value --secret-id ${BitriseControllerTokenSecretArn} --region ${Region} | jq  -r '.SecretString')
                 export WORKSPACE_ID=$(aws secretsmanager get-secret-value --secret-id ${BitriseWorkspaceIDArn} --region ${Region} | jq  -r '.SecretString')
                 
@@ -83,7 +83,7 @@ Resources:
                   DOCKER_OPTS="$DOCKER_OPTS --net=host"
                 fi
                 
-                docker run $DOCKER_OPTS public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.6.23 run \
+                docker run $DOCKER_OPTS public.ecr.aws/t4h1p2s4/bitrise-aws-cloud-controller:0.6.35 run \
                  --token  $TOKEN \
                  --workspace-id $WORKSPACE_ID \
                  --host cloud-controller-aws-internal.services.bitrise.io:443 \
