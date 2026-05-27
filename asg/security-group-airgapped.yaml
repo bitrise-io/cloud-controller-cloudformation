@@ -43,7 +43,7 @@ Resources:
             except Exception as e:
               print(f"Error: {e}")
               cfnresponse.send(event, context, cfnresponse.FAILED, {})
-      Runtime: python3.9
+      Runtime: python3.14
       Timeout: 30
       MemorySize: 128
 
