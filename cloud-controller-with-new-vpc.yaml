@@ -91,6 +91,8 @@ Conditions:
 Resources:
   NewVpcStack:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/vpc/vpc.yaml"
       Parameters:
@@ -102,6 +104,8 @@ Resources:
         PrivateSubnet2CIDR: !Ref PrivateSubnet2CIDR
   BitriseControllerTokenSecret:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/secretmanager/secretmanager.yaml"
       Parameters:
@@ -109,6 +113,8 @@ Resources:
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseControllerLogs:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
       Parameters:
@@ -119,6 +125,8 @@ Resources:
         LogOutputExportNamePrefix:  "BitriseController"
   BitriseAgentLogs:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Condition: ShouldCreateBitriseAgentLogs
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
@@ -129,6 +137,8 @@ Resources:
         LogOutputExportNamePrefix: "BitriseAgentLogs"
   BitriseInstanceRoles:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/iam/roles.yaml"
@@ -136,6 +146,8 @@ Resources:
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseAgentLogsInstanceRoles:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Condition: ShouldCreateBitriseAgentLogs
     DependsOn: [ BitriseAgentLogs ]
     Properties:
@@ -144,6 +156,8 @@ Resources:
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseSecurityGroups:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/asg/security-group.yaml"
       Parameters:
@@ -151,6 +165,8 @@ Resources:
         VpcCidrBlock: !Ref VpcCIDR
   BitriseAutoscalingGroup:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     DependsOn: [NewVpcStack, BitriseInstanceRoles, BitriseControllerTokenSecret, BitriseSecurityGroups]
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/asg/asg.yaml"

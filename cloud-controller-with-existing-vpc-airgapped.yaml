@@ -73,6 +73,8 @@ Conditions:
 Resources:
   BitriseControllerTokenSecret:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/secretmanager/secretmanager.yaml"
       Parameters:
@@ -80,6 +82,8 @@ Resources:
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseControllerLogs:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
       Parameters:
@@ -90,6 +94,8 @@ Resources:
         LogOutputExportNamePrefix: "BitriseController"
   BitriseAgentLogs:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Condition: ShouldCreateBitriseAgentLogs
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/logs/logs.yaml"
@@ -100,6 +106,8 @@ Resources:
         LogOutputExportNamePrefix: "BitriseAgentLogs"
   BitriseInstanceRoles:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     DependsOn: [BitriseControllerTokenSecret, BitriseControllerLogs]
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/iam/roles-airgapped.yaml"
@@ -107,6 +115,8 @@ Resources:
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseAgentLogsInstanceRoles:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Condition: ShouldCreateBitriseAgentLogs
     DependsOn: [ BitriseAgentLogs ]
     Properties:
@@ -115,6 +125,8 @@ Resources:
         BitriseWorkspaceID: !Ref BitriseWorkspaceID
   BitriseSecurityGroups:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/asg/security-group-airgapped.yaml"
       Parameters:
@@ -122,6 +134,8 @@ Resources:
         VpcCidrBlock: !Ref VpcCidrBlock
   BitriseAutoscalingGroup:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     DependsOn: [BitriseInstanceRoles, BitriseControllerTokenSecret, BitriseSecurityGroups]
     Properties:
       TemplateURL: "https://bitrise-cloudformation-templates.s3.amazonaws.com/asg/asg-existing-vpc-airgapped.yaml"
